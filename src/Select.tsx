@@ -1,11 +1,12 @@
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 import * as React from "react";
+import { useEffect, useRef } from "react";
 
 import { Text } from "./Text";
 
 interface SelectOptionItem {
   label: string;
-  value?: string;
+  value: string;
 }
 
 interface SelectOptions extends SelectOptionItem {
@@ -14,7 +15,7 @@ interface SelectOptions extends SelectOptionItem {
 
 interface SelectProps {
   options: SelectOptions[];
-  onChange?: React.ChangeEventHandler<HTMLSelectElement>;
+  onChange?: (item: SelectOptionItem) => void;
   placeholder?: string;
   noDefault?: boolean;
   value?: string;
@@ -133,6 +134,21 @@ const SelectTrigger = styled.button`
   }
 `;
 
+function useOutsideAlerter(ref: any, callback: any) {
+  function handleClickOutside(event: any) {
+    if (ref && ref.current && !ref.current.contains(event.target)) {
+      callback();
+    }
+  }
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  });
+}
+
 export const SelectFactory: React.FC<SelectProps> = ({
   options,
   onChange,
@@ -141,29 +157,24 @@ export const SelectFactory: React.FC<SelectProps> = ({
   value,
   ...props
 }) => {
-  const selectInput = React.useRef<HTMLSelectElement>();
-  const [selectedOption, setOption] = React.useState({
-    value: value ? value : "",
-    label: ""
+  const [showOptions, setOptionsVisibility] = React.useState(false);
+
+  const wrapperRef = useRef(null);
+  useOutsideAlerter(wrapperRef, () => {
+    setOptionsVisibility(false);
   });
-  const [showOptions, setOptionsVisiblity] = React.useState(false);
-  const handleClick = (value: string, label: string) => {
-    const ensureLabel = label === "" ? value : label;
-    setOption({ value: value, label: ensureLabel });
-    setOptionsVisiblity(false);
+
+  const handleClick = ({ value, label }: SelectOptionItem) => {
+    setOptionsVisibility(false);
   };
 
   const toggleSelect = (e: any) => {
-    setOptionsVisiblity(!showOptions);
+    setOptionsVisibility(!showOptions);
   };
 
   return (
-    <div {...props}>
-      <select
-        ref={selectInput as any /* this is :(, fix soon!*/}
-        onChange={onChange}
-        defaultValue={selectedOption.value ? selectedOption.value : ""}
-      >
+    <div ref={wrapperRef} {...props}>
+      <select defaultValue={value}>
         {noDefault && <option />}
         {options.map(option => {
           return option.group ? (
@@ -180,7 +191,7 @@ export const SelectFactory: React.FC<SelectProps> = ({
               })}
             </optgroup>
           ) : (
-            <option key={option.label} value={option.value || option.label}>
+            <option key={option.label} value={option.value}>
               {option.label}
             </option>
           );
@@ -188,9 +199,9 @@ export const SelectFactory: React.FC<SelectProps> = ({
       </select>
       <SelectTrigger onClick={toggleSelect}>
         <Text>
-          {selectedOption.label && selectedOption.label !== ""
-            ? selectedOption.label
-            : placeholder}
+          {options.filter(o => o.value === value).length >= 0
+            ? options.filter(o => o.value === value)[0].label
+            : ""}
         </Text>
         <SelectChevron />
       </SelectTrigger>
@@ -203,11 +214,14 @@ export const SelectFactory: React.FC<SelectProps> = ({
                   <SelectItem
                     key={`group-` + item.label}
                     id={item.value || item.label}
-                    onClick={() =>
-                      handleClick(item.value || item.label, item.label)
-                    }
+                    onClick={() => {
+                      if (onChange) {
+                        onChange(item);
+                      }
+                      handleClick(item);
+                    }}
                   >
-                    {selectedOption.value === item.value && <SelectedCheck />}
+                    {value === item.value && <SelectedCheck />}
                     <Text size="medium" onNegative>
                       {item.label}
                     </Text>
@@ -219,13 +233,16 @@ export const SelectFactory: React.FC<SelectProps> = ({
             <SelectItem
               key={`list-` + i}
               id={option.value}
-              onClick={() =>
-                handleClick(option.value || option.label, option.label)
-              }
+              onClick={() => {
+                if (onChange) {
+                  onChange(option);
+                }
+                handleClick(option);
+              }}
             >
-              {selectedOption.value === option.value && <SelectedCheck />}
+              {value === option.value && <SelectedCheck />}
               <Text size="medium" onNegative>
-                {option.label || option.value}
+                {option.label}
               </Text>
             </SelectItem>
           );

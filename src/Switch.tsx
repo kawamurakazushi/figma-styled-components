@@ -1,7 +1,7 @@
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 import * as React from "react";
 
-import {Text} from './Text'
+import { Text } from "./Text";
 
 const SwitchSlider = styled.span`
   position: absolute;
@@ -68,14 +68,6 @@ const SwitchContainer = styled(SwitchContainerFactory)`
   }
 `;
 
-const SwitchLabel = styled.span`
-  font-family: "Inter", sans-serif;
-  font-weight: 400;
-  font-size: 11px;
-  line-height: 16px;
-  letter-spacing: 0.005em;
-`;
-
 const SwitchFactory: React.FC<{
   onChange?: React.ReactEventHandler;
   checked?: boolean;
@@ -83,7 +75,12 @@ const SwitchFactory: React.FC<{
 }> = ({ checked, onChange, label, ...props }) => {
   return (
     <label {...props}>
-      <SwitchContainer onChange={() => {onChange}} checked={checked || false} />
+      <SwitchContainer
+        onChange={() => {
+          onChange;
+        }}
+        checked={checked || false}
+      />
       <Text>{label}</Text>
     </label>
   );
